@@ -441,9 +441,11 @@ function unb64url(str){str=str.replace(/-/g,"+").replace(/_/g,"/");while(str.len
 function encodeState(s){return b64url(new TextEncoder().encode(JSON.stringify(s)));}
 function decodeState(str){return JSON.parse(new TextDecoder().decode(unb64url(str)));}
 function isFileUrl(){return location.protocol==="file:";}
-/* ?s=1 은 "이 링크에는 # 뒤에 계약 내용이 붙어 있다"는 표식.
-   메신저가 # 뒷부분을 잘라먹고 열었을 때 그 사실을 알아채기 위한 것이다. */
-function linkBase(){return location.origin+location.pathname+"?s=1";}
+/* 계약 내용은 물음표 뒤(?c=...)에 담는다.
+   예전에는 #c=... 에 담았는데, 카카오톡이 링크를 인식할 때 # 뒷부분을 잘라내서
+   고객 화면에 빈 계약서가 뜨는 문제가 있었다. ? 뒤는 주소의 정식 일부라
+   메신저가 잘라내지 않는다. 이미 보낸 #c= 링크도 계속 열리도록 둘 다 읽는다. */
+function linkBase(){return location.origin+location.pathname;}
 function stripEmpty(s){
   Object.keys(s).forEach(k=>{
     const v=s[k];
@@ -458,7 +460,7 @@ function buildSignLink(){
   delete s.sigCs;
   stripEmpty(s);
   s.clientMode=true; s.finalized=false;
-  return linkBase()+"#"+LINK_KEY+"="+encodeState(s);
+  return linkBase()+"?"+LINK_KEY+"="+encodeState(s);
 }
 /* 고객이 서명을 마친 뒤 제작자에게 되돌려 보낼 링크 */
 function buildDoneLink(){
@@ -466,15 +468,16 @@ function buildDoneLink(){
   delete s.sigP; delete s.sigC;   /* 무거운 PNG 대신 획 좌표(sigCs)만 담는다 */
   stripEmpty(s);
   s.clientMode=true; s.finalized=true;
-  return linkBase()+"#"+LINK_KEY+"="+encodeState(s);
+  return linkBase()+"?"+LINK_KEY+"="+encodeState(s);
 }
 /* 계약 내용이 실제로 들어 있는지 */
 function hasContent(s){
   return ["c_name","c_ceo","c_bizno","c_tel","c_addr","w_site","m_total"].some(k=>String((s&&s[k])||"").trim());
 }
-let LINK_ERROR=null;   /* "cut" = # 뒤가 통째로 사라짐, "broken" = 중간에 잘림 */
+let LINK_ERROR=null;   /* "cut" = 내용 부분이 통째로 사라짐, "broken" = 중간에 잘림 */
 function readLinkState(){
-  const m=/[#&]c=([^&]*)/.exec(location.hash||"");
+  /* ?c= 를 먼저 보고, 없으면 예전 방식인 #c= 도 읽는다 */
+  const m=/[?&]c=([^&#]*)/.exec(location.search||"")||/[#&]c=([^&]*)/.exec(location.hash||"");
   if(!m){
     if(/[?&]s=1/.test(location.search))LINK_ERROR="cut";
     return null;
@@ -492,9 +495,7 @@ function readLinkState(){
 function reopenFromText(text){
   const m=/[#?&]c=([A-Za-z0-9_-]{20,})/.exec(text||"");
   if(!m)return false;
-  /* 주소의 # 뒤만 바뀌면 브라우저가 새로고침을 하지 않으므로 직접 다시 읽게 한다 */
-  history.replaceState(null,"",location.pathname+"?s=1#"+LINK_KEY+"="+m[1]);
-  location.reload();
+  location.replace(location.origin+location.pathname+"?"+LINK_KEY+"="+m[1]);
   return true;
 }
 
@@ -918,9 +919,7 @@ window.addEventListener("DOMContentLoaded",()=>{
   /* 계약 내용이 전달되지 않았을 때 조용히 빈 계약서를 보여주지 않고 이유를 알린다 */
   if(LINK_ERROR){
     const ll=$("link-lost");
-    $("link-lost-desc").innerHTML = LINK_ERROR==="cut"
-      ? "계약 내용은 링크에서 <b>#</b> 뒤쪽에 들어 있는데, 그 부분이 잘린 채 열렸습니다.<br>카카오톡 대화방에서 <b>링크를 길게 눌러 [복사]</b>한 뒤 아래에 붙여넣고 [열기]를 눌러주세요."
-      : "링크가 중간에 잘려서 계약 내용을 읽지 못했습니다.<br>카카오톡 대화방에서 <b>링크를 길게 눌러 [복사]</b>한 뒤 아래에 붙여넣고 [열기]를 눌러주세요.";
+    $("link-lost-desc").innerHTML = "링크 뒷부분(계약 내용)이 잘린 채 열렸습니다.<br>카카오톡 대화방에서 <b>링크를 길게 눌러 [복사]</b>한 뒤 아래에 붙여넣고 [열기]를 눌러주세요.";
     ll.style.display="block";
   }
   $("btn-link-paste").addEventListener("click",()=>{
