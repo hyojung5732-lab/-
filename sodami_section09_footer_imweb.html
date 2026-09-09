@@ -1,0 +1,170 @@
+<!-- ============================================================
+  소다미(SODAMI) 아임웹 HTML 위젯 삽입용 - [9번째 섹션] 푸터
+  ------------------------------------------------------------
+  ★ 메뉴는 실제 사용 중이신 3개 구성으로 맞췄습니다: 브랜드 / 기저귀&건티슈 / 납품견적
+  ★ 사업자 정보는 알려주신 실제 정보(대표이사 이득혁 / 사업자등록번호
+  477-87-02816 / 통신판매신고번호 2026-경기안산-1096 / 주소 경기 안산시
+  단원구 죽재길 15 / 대표전화 02-898-0711 / 이메일 dhlwin@naver.com)로
+  넣었습니다.
+  ★ "소다미" 로고는 전체 흰색으로 통일했습니다 (이전엔 "미"만 파란색이었음).
+  ★ 바로가기 메뉴에 "쿠팡 바로가기" 추가 (새 탭으로 열림).
+  ★ 이용약관 / 개인정보처리방침 링크를 회사정보와 저작권 사이에 별도 줄로 추가
+  (아임웹 모달 연동용 data-terms-mode 속성 그대로 사용, 개인정보처리방침은
+  법적 고지 관례에 맞춰 굵게 강조).
+
+  적용된 아임웹 호환 규칙:
+  - CSS 변수 미사용(고정값), 글자 크기 rem 대신 px, 배경은 풀블리드,
+    좌우 여백은 다른 섹션들과 동일(clamp(20px, 4vw, 60px))
+============================================================ -->
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800;900&display=swap');
+
+.sodami-footer-widget, .sodami-footer-widget *, .sodami-footer-widget *::before, .sodami-footer-widget *::after {
+  box-sizing: border-box;
+}
+.sodami-footer-widget {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Malgun Gothic', '맑은 고딕', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+  width: 100%;
+  max-width: 100%;
+}
+.sodami-footer-widget a { text-decoration: none; cursor: pointer; }
+.sodami-footer-widget .container-wide {
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 0 clamp(20px, 4vw, 60px);
+}
+
+.sodami-footer-widget .site-footer {
+  position: relative;
+  left: 50%;
+  right: 50%;
+  margin-left: -50vw;
+  margin-right: -50vw;
+  width: 100vw;
+  max-width: 100vw;
+  background: #0f172a;
+  color: #94a3b8;
+  padding: 64px 0 40px;
+  font-size: 14.4px;
+}
+
+.sodami-footer-widget .footer-top {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 50px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sodami-footer-widget .footer-logo {
+  color: #ffffff;
+  font-size: 27.2px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  margin-bottom: 8px;
+}
+.sodami-footer-widget .footer-slogan { margin: 8px 0 24px; color: #cbd5e1; }
+
+.sodami-footer-widget .footer-cs-box { display: flex; flex-direction: column; }
+.sodami-footer-widget .cs-label { font-size: 13.6px; color: #94a3b8; }
+.sodami-footer-widget .cs-tel { font-size: 32px; font-weight: 900; color: #38bdf8; margin: 2px 0 4px; }
+.sodami-footer-widget .cs-time { font-size: 12.8px; color: #64748b; }
+
+.sodami-footer-widget .footer-links-group { display: grid; grid-template-columns: 1fr; }
+.sodami-footer-widget .footer-col h4 { color: #ffffff; font-size: 16px; font-weight: 700; margin-bottom: 16px; }
+.sodami-footer-widget .footer-col ul { list-style: none; display: flex; flex-direction: column; gap: 10px; margin: 0; padding: 0; }
+.sodami-footer-widget .footer-col a { color: #94a3b8; transition: color 0.15s ease; }
+.sodami-footer-widget .footer-col a:hover { color: #ffffff; }
+
+.sodami-footer-widget .footer-bottom { padding-top: 30px; font-size: 13.12px; line-height: 1.8; }
+.sodami-footer-widget .footer-bottom strong { color: #e2e8f0; }
+
+.sodami-footer-widget .footer-legal {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin: 18px 0 4px;
+}
+.sodami-footer-widget .footer-legal a {
+  font-size: 14.4px;
+  font-weight: 600;
+  color: #cbd5e1;
+  transition: color 0.15s ease;
+}
+.sodami-footer-widget .footer-legal a:hover { color: #ffffff; text-decoration: underline; }
+.sodami-footer-widget .footer-legal a.legal-privacy {
+  color: #ffffff;
+  font-weight: 800;
+}
+.sodami-footer-widget .footer-legal a.legal-privacy:hover { color: #38bdf8; }
+.sodami-footer-widget .footer-legal .legal-divider {
+  color: #475569;
+  font-size: 12px;
+}
+
+.sodami-footer-widget .copyright { margin-top: 12px; color: #64748b; }
+.sodami-footer-widget .designer-credit { margin-top: 8px; color: #64748b; }
+.sodami-footer-widget .designer-credit a { color: #38bdf8; font-weight: 600; }
+.sodami-footer-widget .designer-credit a:hover { text-decoration: underline; }
+
+@media (max-width: 760px) {
+  .sodami-footer-widget .site-footer { padding: 48px 0 32px; }
+  .sodami-footer-widget .footer-top { grid-template-columns: 1fr; gap: 32px; }
+  .sodami-footer-widget .footer-legal { gap: 10px; }
+}
+</style>
+
+<!-- 푸터 영역 -->
+<div class="sodami-footer-widget">
+<footer class="site-footer">
+  <div class="container-wide">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <div class="footer-logo">소다미</div>
+        <p class="footer-slogan">"1%의 불편함도 남기지 않는 성인용 프리미엄 위생용품"</p>
+        <div class="footer-cs-box">
+          <span class="cs-label">고객감동센터 (대표전화)</span>
+          <strong class="cs-tel">02-898-0711</strong>
+          <span class="cs-time">평일 09:00 ~ 18:00 (점심 12:00 ~ 13:00 / 주말·공휴일 휴무)</span>
+        </div>
+      </div>
+
+      <div class="footer-links-group">
+        <div class="footer-col">
+          <h4>바로가기</h4>
+          <ul>
+            <li><a href="#about">브랜드</a></li>
+            <li><a href="#products">기저귀&amp;건티슈</a></li>
+            <li><a href="/contact">납품견적</a></li>
+            <li><a href="https://www.coupang.com/vp/products/8401613768?itemId=28180843046&amp;vendorItemId=91380054354&amp;src=1191000&amp;spec=10999999&amp;addtag=400&amp;ctag=8401613768&amp;lptag=CFM90802817&amp;itime=20260908220556&amp;pageType=PRODUCT&amp;pageValue=8401613768&amp;wPcid=17885256233801724658867&amp;wRef=&amp;wTime=20260908220556&amp;redirect=landing&amp;abTestInfo=&amp;mcid=ca4e7c2bdb3648a4a9fec11e84beffdd&amp;sharesource=sharebutton&amp;style=kakao_existing_ui&amp;isshortened=Y&amp;settlement=N" target="_blank" rel="noopener noreferrer">쿠팡 바로가기</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <div class="company-info">
+        <p>
+          <strong>상호명:</strong> 소다미 | <strong>대표이사:</strong> 이득혁 | <strong>개인정보보호책임자:</strong> 소다미<br>
+          <strong>사업자등록번호:</strong> 477-87-02816 | <strong>통신판매신고번호:</strong> 2026-경기안산-1096<br>
+          <strong>주소:</strong> 경기 안산시 단원구 죽재길 15 | <strong>대표전화:</strong> 02-898-0711 | <strong>대표메일:</strong> dhlwin@naver.com
+        </p>
+        <div class="footer-legal">
+          <a href="javascript:;" data-terms-mode="policy" data-terms-mode-type="modal">이용약관</a>
+          <span class="legal-divider">|</span>
+          <a href="javascript:;" data-terms-mode="privacy" data-terms-mode-type="modal" class="legal-privacy">개인정보처리방침</a>
+        </div>
+        <p class="copyright">© 2026 SODAMI. All rights reserved. 본 사이트의 모든 디자인과 콘텐츠는 저작권법의 보호를 받습니다.</p>
+        <p class="designer-credit">COPYRIGHT ⓒ 소다미 DESIGNED BY <a href="https://open.kakao.com/o/sixIaoHi" target="_blank" rel="noopener noreferrer">여백(YEOBAEK)</a></p>
+      </div>
+    </div>
+  </div>
+</footer>
+</div>
