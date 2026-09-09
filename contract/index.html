@@ -117,6 +117,15 @@
   #done-screen h2{font-size:21px; color:#fff; margin-bottom:10px; border:none; display:block; padding:0;}
   #done-screen p{font-size:14px; color:#cfe8dd; margin-bottom:18px;}
   body.sent #done-screen{display:block;}
+  #done-url{margin:14px auto 10px; max-width:640px; padding:11px 13px; background:rgba(0,0,0,.35); border:1px solid var(--gline); border-radius:8px; font-size:12px; color:#dbeafe; word-break:break-all; text-align:left; max-height:88px; overflow:auto; -webkit-user-select:all; user-select:all;}
+  #done-screen .dn-btns{display:flex; flex-wrap:wrap; gap:8px; justify-content:center;}
+  #final-notice{display:none; background:rgba(14,165,111,.12); border:1px solid rgba(14,165,111,.5); border-radius:12px; padding:16px 20px; margin-bottom:20px; font-size:14px; color:#cfe8dd;}
+  #final-notice b{color:#5fe3ae;}
+  #final-notice .dn-btns{display:flex; flex-wrap:wrap; gap:8px;}
+  body.finalized.link-mode #final-notice{display:block;}
+  body.finalized #btn-final{display:none !important;}
+  body.finalized #client-notice{display:none !important;}
+  body.sent #final-notice{display:none !important;}
   body.sent .btnbar, body.sent #doc-card, body.sent #client-notice, body.sent #kakao-notice{display:none !important;}
 
   body.client-mode #btn-link{display:none;}
@@ -166,14 +175,29 @@
   </div>
 
   <div id="done-screen" class="no-print">
-    <h2 id="done-title">✅ 서명이 완료되었습니다</h2>
+    <h2 id="done-title">✍️ 서명이 저장되었습니다</h2>
     <p id="done-desc"></p>
-    <button class="btn btn-ghost" id="btn-done-print">🖨️ 내 사본 PDF로 저장</button>
+    <button class="btn btn-green" id="btn-done-send">📤 카카오톡으로 제작자에게 보내기</button>
+    <div id="done-url"></div>
+    <div class="dn-btns">
+      <button class="btn btn-ghost" id="btn-done-copy">📋 링크 복사</button>
+      <button class="btn btn-ghost" id="btn-done-print">🖨️ 내 사본 PDF로 저장</button>
+      <button class="btn btn-ghost" id="btn-done-file">💾 파일로 저장</button>
+    </div>
+  </div>
+
+  <div id="final-notice" class="no-print">
+    ✅ <b>서명이 완료된 계약서입니다.</b> 갑·을 서명이 모두 들어가 있습니다.<br>
+    <span style="font-size:12.5px; opacity:.85">보관하시려면 아래에서 PDF나 HTML 파일로 저장하세요.</span>
+    <div class="dn-btns" style="margin-top:12px;">
+      <button class="btn btn-primary" id="btn-final-print">🖨️ PDF로 저장</button>
+      <button class="btn btn-ghost" id="btn-final-file">💾 HTML 파일로 저장</button>
+    </div>
   </div>
 
   <div id="kakao-notice" class="no-print">
-    📱 <b>카카오톡 인앱 브라우저</b>입니다. 서명은 여기서 바로 하실 수 있어요.<br>
-    다만 <b>파일 저장·전송</b>이 막힐 수 있으니, 저장이 안 되면 아래 버튼으로 <b>외부 브라우저(크롬/사파리)</b>에서 열어주세요.
+    📱 <b>카카오톡 인앱 브라우저</b>입니다. 읽기·서명은 여기서 그대로 하시면 됩니다.<br>
+    다만 <b>PDF 저장·파일 다운로드</b>는 카톡 안에서 막히는 경우가 있어요. 저장하시려면 아래 버튼으로 <b>외부 브라우저(크롬/사파리)</b>에서 열어주세요.
     <div><button class="btn btn-warn" id="btn-open-external" type="button">🌐 외부 브라우저로 열기</button></div>
   </div>
 
@@ -308,17 +332,8 @@ const $=id=>document.getElementById(id);
 const FIELDS=["c_name","c_ceo","c_bizno","c_tel","c_addr","w_site","w_platform","w_pages","w_revs","w_etc","d_start","d_end","d_inspect","d_warranty","m_total","m_delay","w_special","d_sign"];
 const LS_KEY="homepage_contract_draft_v1";
 
-/* ================= 링크 서명 설정 =================
-   SUBMIT_URL 을 비워두면: 고객이 링크로 서명한 뒤 "파일"을 저장해 회신합니다.
-   SUBMIT_URL 에 Google Apps Script 웹앱 주소를 넣으면:
-     고객이 카카오톡 안에서 서명 → [서명 완료] 한 번으로 제작자에게 자동 전송됩니다.
-   설치 방법은 같은 폴더의 README.md / apps-script.gs 참고.
-   예) const SUBMIT_URL="https://script.google.com/macros/s/AKfycb....../exec";
-==================================================== */
-const CONFIG={
-  SUBMIT_URL:"",
-  OWNER_NAME:"여백웹"
-};
+/* 링크 서명 설정 */
+const CONFIG={OWNER_NAME:"여백웹"};
 
 /* 을(제작자) 고정 정보 */
 const P_INFO={p_name:"여백웹",p_ceo:"강효정",p_bizno:"674-21-02691",p_tel:"010-3157-1668",p_addr:"경기도 안산시 단원구 와동로 125"};
@@ -359,13 +374,42 @@ async function shareText(title,url){
   try{await navigator.share({title,text:title+"\n"+url,url});return true;}
   catch(err){return false;}
 }
-function copyText(t){
-  if(navigator.clipboard&&navigator.clipboard.writeText){
-    navigator.clipboard.writeText(t).then(()=>toast("📋 링크를 복사했어요")).catch(()=>toast("링크를 길게 눌러 복사해주세요"));
-  }else{
-    const el=$("link-url"); if(el&&window.getSelection){const r=document.createRange();r.selectNodeContents(el);const sel=getSelection();sel.removeAllRanges();sel.addRange(r);}
+function copyText(t,targetId){
+  const fallback=()=>{
+    const el=$(targetId||"link-url");
+    if(el&&window.getSelection){const r=document.createRange();r.selectNodeContents(el);const sel=getSelection();sel.removeAllRanges();sel.addRange(r);}
     toast("링크를 길게 눌러 복사해주세요");
-  }
+  };
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(t).then(()=>toast("📋 링크를 복사했어요")).catch(fallback);
+  }else fallback();
+}
+
+/* 서명을 그림파일이 아닌 '획 좌표'로 저장한다.
+   PNG 는 6KB 가 넘어 링크에 담기 어렵지만, 좌표는 1~2KB 로 줄어들고
+   화면 크기가 달라져도 깨지지 않게 다시 그려진다. 좌표는 0~1000 정수 + 차이값. */
+function encStrokes(strokes){
+  if(!strokes||!strokes.length)return "";
+  return strokes.map(st=>{
+    let out=[],px=0,py=0;
+    st.forEach((pt,i)=>{
+      const x=Math.round(pt[0]*1000),y=Math.round(pt[1]*1000);
+      out.push(i?((x-px)+","+(y-py)):(x+","+y));
+      px=x;py=y;
+    });
+    return out.join(" ");
+  }).join(";");
+}
+function decStrokes(str){
+  if(!str)return [];
+  return str.split(";").filter(Boolean).map(st=>{
+    let px=0,py=0;
+    return st.split(" ").filter(Boolean).map((pair,i)=>{
+      const a=pair.split(","),dx=+a[0],dy=+a[1];
+      if(i===0){px=dx;py=dy;}else{px+=dx;py+=dy;}
+      return [px/1000,py/1000];
+    });
+  });
 }
 
 /* ---------- 계약 내용을 링크(URL)에 담기 ---------- */
@@ -375,33 +419,26 @@ function unb64url(str){str=str.replace(/-/g,"+").replace(/_/g,"/");while(str.len
 function encodeState(s){return b64url(new TextEncoder().encode(JSON.stringify(s)));}
 function decodeState(str){return JSON.parse(new TextDecoder().decode(unb64url(str)));}
 function isFileUrl(){return location.protocol==="file:";}
+function linkBase(){return location.origin+location.pathname+location.search;}
 function buildSignLink(){
   const s=collect();
   delete s.sigP;              /* 을 도장은 페이지에 내장되어 있음 */
   delete s.sigC;              /* 갑 서명은 고객이 직접 */
+  delete s.sigCs;
   s.clientMode=true; s.finalized=false;
-  return location.origin+location.pathname+location.search+"#"+LINK_KEY+"="+encodeState(s);
+  return linkBase()+"#"+LINK_KEY+"="+encodeState(s);
+}
+/* 고객이 서명을 마친 뒤 제작자에게 되돌려 보낼 링크 */
+function buildDoneLink(){
+  const s=collect();
+  delete s.sigP; delete s.sigC;   /* 무거운 PNG 대신 획 좌표(sigCs)만 담는다 */
+  s.clientMode=true; s.finalized=true;
+  return linkBase()+"#"+LINK_KEY+"="+encodeState(s);
 }
 function readLinkState(){
   const m=/[#&]c=([^&]+)/.exec(location.hash||"");
   if(!m)return null;
   try{return decodeState(m[1]);}catch(err){return null;}
-}
-
-/* ---------- 서명 완료본을 제작자에게 바로 전송 ---------- */
-async function sendToOwner(state){
-  const body=JSON.stringify({
-    type:"contract-signed",
-    filename:fileBase()+"_서명완료.html",
-    signedAt:new Date().toISOString(),
-    summary:{client:state.c_name||"",ceo:state.c_ceo||"",tel:state.c_tel||"",
-             site:state.w_site||"",amount:state.m_total||"",signDate:state.d_sign||""},
-    state:state,
-    html:buildExportHtml(state)
-  });
-  const opt={method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body};
-  try{const res=await fetch(CONFIG.SUBMIT_URL,opt); if(res.ok)return true;}catch(err){}
-  try{await fetch(CONFIG.SUBMIT_URL,Object.assign({mode:"no-cors"},opt)); return true;}catch(err){return false;}
 }
 
 function isKakaoInApp(){return /KAKAOTALK/i.test(navigator.userAgent);}
@@ -412,16 +449,31 @@ function openInExternalBrowser(){
 /* ---------- 서명 패드 ---------- */
 function makePad(canvas){
   const ctx=canvas.getContext("2d");
-  const pad={canvas,ctx,drawn:false,locked:false};
+  const pad={canvas,ctx,drawn:false,locked:false,strokes:[]};
   function resize(){
     /* 도장처럼 원본 비율을 지켜야 하는 이미지는 늘어난 스냅샷 대신 원본에서 항상 다시 그린다 */
-    const url=(!pad.stampSrc&&pad.drawn)?canvas.toDataURL():null;
+    const url=(!pad.stampSrc&&pad.drawn&&!pad.strokes.length)?canvas.toDataURL():null;
     const r=canvas.getBoundingClientRect(); const dpr=window.devicePixelRatio||1;
     canvas.width=Math.max(1,r.width*dpr); canvas.height=Math.max(1,r.height*dpr);
     ctx.setTransform(dpr,0,0,dpr,0,0); ctx.lineWidth=2.2; ctx.lineCap="round"; ctx.lineJoin="round"; ctx.strokeStyle="#101828";
     if(pad.stampSrc)pad.setStampImage(pad.stampSrc,pad.stampRatio);
+    else if(pad.strokes.length)pad.redraw();
     else if(url)pad.setData(url);
   }
+  /* 저장된 획 좌표로 서명을 다시 그린다 (화면 폭이 달라져도 그대로 재현) */
+  pad.redraw=function(){
+    const r=canvas.getBoundingClientRect();
+    ctx.clearRect(0,0,r.width,r.height);
+    pad.strokes.forEach(st=>{
+      if(!st.length)return;
+      ctx.beginPath();
+      ctx.moveTo(st[0][0]*r.width,st[0][1]*r.height);
+      if(st.length===1)ctx.lineTo(st[0][0]*r.width+.1,st[0][1]*r.height+.1);
+      for(let i=1;i<st.length;i++)ctx.lineTo(st[i][0]*r.width,st[i][1]*r.height);
+      ctx.stroke();
+    });
+    pad.drawn=pad.strokes.length>0;
+  };
   pad.setData=function(url){
     if(!url){return;}
     const img=new Image();
@@ -450,13 +502,33 @@ function makePad(canvas){
     };
     img.src=url;
   };
-  pad.clear=function(){const r=canvas.getBoundingClientRect();ctx.clearRect(0,0,r.width,r.height);pad.drawn=false;};
+  pad.clear=function(){const r=canvas.getBoundingClientRect();ctx.clearRect(0,0,r.width,r.height);pad.drawn=false;pad.strokes=[];canvas.closest(".sig-box")?.classList.remove("signed");};
   pad.data=function(){return pad.drawn?canvas.toDataURL("image/png"):null;};
   let on=false;
   function pos(e){const r=canvas.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top};}
-  canvas.addEventListener("pointerdown",e=>{if(pad.locked)return;e.preventDefault();canvas.setPointerCapture(e.pointerId);on=true;const p=pos(e);ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(p.x+.1,p.y+.1);ctx.stroke();pad.drawn=true;canvas.closest(".sig-box")?.classList.add("signed");},{passive:false});
-  canvas.addEventListener("pointermove",e=>{if(!on||pad.locked)return;e.preventDefault();const p=pos(e);ctx.lineTo(p.x,p.y);ctx.stroke();},{passive:false});
-  ["pointerup","pointercancel"].forEach(ev=>canvas.addEventListener(ev,()=>{on=false;}));
+  let cur=null,lastP=null;
+  canvas.addEventListener("pointerdown",e=>{
+    if(pad.locked)return;e.preventDefault();
+    try{canvas.setPointerCapture(e.pointerId);}catch(err){}
+    on=true;const p=pos(e),r=canvas.getBoundingClientRect();
+    ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(p.x+.1,p.y+.1);ctx.stroke();
+    cur=[[p.x/r.width,p.y/r.height]];pad.strokes.push(cur);lastP=p;
+    pad.drawn=true;canvas.closest(".sig-box")?.classList.add("signed");
+  },{passive:false});
+  canvas.addEventListener("pointermove",e=>{
+    if(!on||pad.locked)return;e.preventDefault();
+    const p=pos(e);ctx.lineTo(p.x,p.y);ctx.stroke();
+    /* 너무 촘촘한 점은 건너뛴다 - 링크 길이를 줄이면서 모양은 그대로 */
+    if(cur&&(!lastP||Math.abs(p.x-lastP.x)+Math.abs(p.y-lastP.y)>=1.5)){
+      const r=canvas.getBoundingClientRect();
+      cur.push([p.x/r.width,p.y/r.height]);lastP=p;
+    }
+  },{passive:false});
+  ["pointerup","pointercancel"].forEach(ev=>canvas.addEventListener(ev,e=>{
+    if(on&&cur&&lastP){const r=canvas.getBoundingClientRect();const last=cur[cur.length-1];
+      if(last[0]!==lastP.x/r.width||last[1]!==lastP.y/r.height)cur.push([lastP.x/r.width,lastP.y/r.height]);}
+    on=false;cur=null;lastP=null;
+  }));
   pad.resize=resize;
   window.addEventListener("resize",resize);
   requestAnimationFrame(resize);
@@ -474,7 +546,7 @@ function collect(){
   const s={};
   FIELDS.forEach(k=>{s[k]=$(k)?$(k).value:"";});
   s.feats=[...document.querySelectorAll(".feat")].filter(c=>c.checked).map(c=>c.value);
-  s.sigP=padP.data(); s.sigC=padC.data();
+  s.sigP=padP.data(); s.sigC=padC.data(); s.sigCs=encStrokes(padC.strokes);
   s.clientMode=document.body.classList.contains("client-mode");
   s.finalized=document.body.classList.contains("finalized");
   return s;
@@ -483,7 +555,9 @@ function apply(s){
   if(!s)return;
   FIELDS.forEach(k=>{if($(k)&&s[k]!=null)$(k).value=s[k];});
   if(Array.isArray(s.feats)){document.querySelectorAll(".feat").forEach(c=>{c.checked=s.feats.includes(c.value);});}
-  if(s.sigP){padP.setData(s.sigP);} if(s.sigC){padC.setData(s.sigC);$("sig-box-c")?.classList.add("signed");}
+  if(s.sigP){padP.setData(s.sigP);}
+  if(s.sigCs){padC.strokes=decStrokes(s.sigCs);padC.redraw();$("sig-box-c")?.classList.add("signed");}
+  else if(s.sigC){padC.setData(s.sigC);$("sig-box-c")?.classList.add("signed");}
   render();
 }
 
@@ -729,25 +803,39 @@ function showDone(msg){
   $("done-desc").innerHTML=msg;
   window.scrollTo({top:0,behavior:"smooth"});
 }
+async function sendDoneLink(){
+  const url=$("done-url").textContent;
+  const shared=await shareText("[서명완료] 홈페이지 제작 계약서",url);
+  if(!shared)copyText(url,"done-url");
+  else toast("📤 전송창이 열렸어요. 제작자와의 대화방을 선택하세요");
+}
+async function saveSignedFile(){
+  const st=collect(); st.clientMode=true; st.finalized=true;
+  const r=await shareOrDownload(fileBase()+"_서명완료.html",buildExportHtml(st));
+  if(r==="downloaded")toast("💾 저장 완료");
+}
+
+$("btn-done-send").addEventListener("click",sendDoneLink);
+$("btn-done-copy").addEventListener("click",()=>copyText($("done-url").textContent,"done-url"));
+$("btn-done-file").addEventListener("click",saveSignedFile);
+$("btn-final-print")?.addEventListener("click",()=>window.print());
+$("btn-final-file")?.addEventListener("click",saveSignedFile);
 
 $("btn-final").addEventListener("click",async()=>{
   const s=collect();
   if(!s.sigC){alert("'갑(발주자)' 서명란에 먼저 서명해주세요.");return;}
-  s.clientMode=true; s.finalized=true;
 
-  /* 링크로 열렸고 전송 주소가 설정되어 있으면 → 파일 없이 바로 제작자에게 전송 */
-  if(CONFIG.SUBMIT_URL&&!isFileUrl()){
-    const btn=$("btn-final"); const label=btn.textContent;
-    btn.disabled=true; btn.textContent="전송 중…";
-    const ok=await sendToOwner(s);
-    btn.disabled=false; btn.textContent=label;
-    if(ok){
-      showDone("서명하신 계약서가 <b>"+CONFIG.OWNER_NAME+"</b>에 전송되었습니다.<br>따로 파일을 보내실 필요 없습니다. 사본이 필요하시면 아래 버튼으로 저장하세요.");
-      return;
-    }
-    toast("전송에 실패했어요. 파일로 저장해 회신해주세요");
+  /* 링크로 받은 계약서면: 파일 저장/다운로드 없이 '완료 링크'를 만들어 제작자에게 되돌려 보낸다.
+     카톡 인앱 브라우저는 파일 저장이 막히는 경우가 많지만 링크 공유는 항상 된다. */
+  if(document.body.classList.contains("link-mode")&&!isFileUrl()){
+    const url=buildDoneLink();
+    $("done-url").textContent=url;
+    showDone("아래 <b>[카카오톡으로 제작자에게 보내기]</b>를 눌러 서명본을 "+CONFIG.OWNER_NAME+"에 회신해주세요.<br>이 링크 안에 서명까지 들어 있어 파일을 따로 보내실 필요가 없습니다.");
+    await sendDoneLink();
+    return;
   }
 
+  s.clientMode=true; s.finalized=true;
   const r=await shareOrDownload(fileBase()+"_서명완료.html",buildExportHtml(s));
   if(r==="shared")toast("✅ 공유 완료! 카카오톡 등으로 제작자에게 전송해주세요");
   else if(r==="downloaded"){
@@ -765,18 +853,18 @@ window.addEventListener("DOMContentLoaded",()=>{
   const today=new Date().toISOString().slice(0,10);
   if(!$("d_sign").value)$("d_sign").value=today;
   const linkState=readLinkState();
-  const autoSend=!!CONFIG.SUBMIT_URL&&!isFileUrl();
+  const onWeb=!isFileUrl();
   if(linkState){
     document.body.classList.add("link-mode");
-    $("btn-final").textContent=autoSend?"✅ 서명 완료 · 제작자에게 전송":"✅ 서명 완료본 저장";
-    if(autoSend){
-      $("client-howto").innerHTML="서명 후 <b>[서명 완료 · 제작자에게 전송]</b> 버튼만 누르면 끝입니다. 파일을 따로 보내실 필요가 없습니다.";
-    }else{
-      $("client-howto").innerHTML="서명 후 <b>[서명 완료본 저장]</b> 버튼을 누르면 완료된 계약서 파일이 저장됩니다. 저장된 파일을 제작자에게 회신해주세요.";
+    if(!linkState.finalized&&onWeb){
+      $("btn-final").textContent="✅ 서명 완료 · 제작자에게 보내기";
+      $("client-howto").innerHTML="서명 후 <b>[서명 완료 · 제작자에게 보내기]</b> 버튼을 누르면 카카오톡 공유창이 열립니다. 제작자와의 대화방을 선택해 보내주시면 끝입니다.";
     }
   }
-  /* 카톡 인앱 브라우저에서도 서명 자체는 가능 - 파일을 주고받아야 할 때만 외부 브라우저 안내 */
-  if(isKakaoInApp()&&!(linkState&&autoSend)){const kn=$("kakao-notice"); if(kn)kn.style.display="block";}
+  /* 서명 단계는 카톡 안에서 전부 되므로 안내가 필요 없다.
+     반대로 완료본을 열람·저장하는 단계에서는 인쇄·다운로드가 막힐 수 있어 안내한다. */
+  const needSave=!(linkState&&onWeb)||!!(linkState&&linkState.finalized);
+  if(isKakaoInApp()&&needSave){const kn=$("kakao-notice"); if(kn)kn.style.display="block";}
 
   if(window.__EMBEDDED__||linkState){
     const s=window.__EMBEDDED__||linkState;
