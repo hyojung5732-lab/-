@@ -216,7 +216,7 @@
   </div>
 
   <div id="link-lost" class="no-print">
-    <b id="link-lost-title">⚠️ 링크의 뒷부분이 전달되지 않았습니다</b>
+    <b id="link-lost-title">⚠️ 계약 내용을 불러오지 못했습니다</b>
     <div id="link-lost-desc"></div>
     <div class="ll-row">
       <input type="text" id="link-paste" placeholder="여기에 링크를 붙여넣으세요" autocomplete="off" spellcheck="false">
@@ -406,11 +406,18 @@ async function shareOrDownload(filename,content,type){
 }
 async function shareText(title,url){
   if(!navigator.share)return false;
-  try{await navigator.share({title,text:title+"\n"+url,url});return true;}
+  try{await navigator.share({title,url});return true;}
   catch(err){return false;}
 }
 function copyText(t,targetId){
   const fallback=()=>{
+    const input=document.createElement("textarea");
+    input.value=t;input.readOnly=true;
+    input.style.cssText="position:fixed;top:0;left:0;opacity:0;font-size:16px";
+    document.body.appendChild(input);input.select();input.setSelectionRange(0,t.length);
+    let copied=false;try{copied=document.execCommand("copy");}catch(e){}
+    input.remove();
+    if(copied){toast("📋 링크 전체를 복사했어요");return;}
     const el=$(targetId||"link-url");
     if(el&&window.getSelection){const r=document.createRange();r.selectNodeContents(el);const sel=getSelection();sel.removeAllRanges();sel.addRange(r);}
     toast("링크를 길게 눌러 복사해주세요");
@@ -462,13 +469,21 @@ function unpackState(o){const s={};Object.keys(o).forEach(k=>{s[K_LONG[k]||k]=o[
 /* 체크한 작업 범위는 한글 이름 대신 몇 번째 항목인지(번호)만 담는다.
    목록에 없는 값은 글자 그대로 두므로 예전 링크도 그대로 읽힌다. */
 function featList(){return [...document.querySelectorAll(".feat")].map(c=>c.value);}
+function utf8Encode(text){
+  if(typeof TextEncoder!=="undefined")return new TextEncoder().encode(text);
+  return Uint8Array.from(unescape(encodeURIComponent(text)),c=>c.charCodeAt(0));
+}
+function utf8Decode(bytes){
+  if(typeof TextDecoder!=="undefined")return new TextDecoder("utf-8",{fatal:true}).decode(bytes);
+  return decodeURIComponent(Array.from(bytes,b=>"%"+b.toString(16).padStart(2,"0")).join(""));
+}
 function encodeState(s){
   const o=Object.assign({},s);
   if(Array.isArray(o.feats)){const L=featList();o.feats=o.feats.map(v=>{const i=L.indexOf(v);return i>=0?i:v;});}
-  return b64url(new TextEncoder().encode(JSON.stringify(packState(o))));
+  return b64url(utf8Encode(JSON.stringify(packState(o))));
 }
 function decodeState(str){
-  const o=unpackState(JSON.parse(new TextDecoder().decode(unb64url(str))));
+  const o=unpackState(JSON.parse(utf8Decode(unb64url(str))));
   if(Array.isArray(o.feats)){const L=featList();o.feats=o.feats.map(v=>typeof v==="number"?L[v]:v).filter(v=>v!=null);}
   return o;
 }
@@ -511,15 +526,16 @@ function readLinkState(){
   /* ?c= 를 먼저 보고, 없으면 예전 방식인 #c= 도 읽는다 */
   const m=/[?&]c=([^&#]*)/.exec(location.search||"")||/[#&]c=([^&]*)/.exec(location.hash||"");
   if(!m){
-    if(/[?&]s=1/.test(location.search))LINK_ERROR="cut";
+    if(/[?&](?:s=1|c(?:$|&))/.test(location.search)||/(?:^#|&)c$/.test(location.hash))LINK_ERROR="missing";
     return null;
   }
   try{
     const st=decodeState(m[1]);
-    if(!st||typeof st!=="object")throw new Error("bad state");
+    if(!st||typeof st!=="object"||Array.isArray(st))throw new Error("bad state");
     return st;
   }catch(err){
-    LINK_ERROR="broken";
+    LINK_ERROR=m[1]?"unreadable":"missing";
+    console.warn("Contract link could not be read:",err&&err.name);
     return null;
   }
 }
@@ -951,7 +967,7 @@ window.addEventListener("DOMContentLoaded",()=>{
   /* 계약 내용이 전달되지 않았을 때 조용히 빈 계약서를 보여주지 않고 이유를 알린다 */
   if(LINK_ERROR){
     const ll=$("link-lost");
-    $("link-lost-desc").innerHTML = "링크 뒷부분(계약 내용)이 잘린 채 열렸습니다.<br>카카오톡 대화방에서 <b>링크를 길게 눌러 [복사]</b>한 뒤 아래에 붙여넣고 [열기]를 눌러주세요.";
+    $("link-lost-desc").innerHTML = LINK_ERROR==="missing"?"주소에 계약 내용이 포함되어 있지 않습니다. 카카오톡 대화방에서 <b>주소 전체를 복사</b>해 아래에 붙여넣어 주세요.":"주소의 계약 내용을 읽지 못했습니다. 주소가 일부만 전달됐거나 브라우저가 처리하지 못했을 수 있습니다. <b>주소 전체를 복사</b>해 아래에 붙여넣거나 Safari·Chrome에서 열어주세요.";
     ll.style.display="block";
   }
   $("btn-link-paste").addEventListener("click",()=>{
@@ -974,8 +990,14 @@ window.addEventListener("DOMContentLoaded",()=>{
   const needSave=!(linkState&&onWeb)||!!(linkState&&linkState.finalized);
   if(isKakaoInApp()&&needSave){const kn=$("kakao-notice"); if(kn)kn.style.display="block";}
 
+  if(LINK_ERROR){
+    $("form-card").style.display="none";
+    $("doc-card").style.display="none";
+    document.querySelectorAll(".btnbar").forEach(el=>el.style.display="none");
+    return;
+  }
   if(window.__EMBEDDED__||linkState){
-    const s=window.__EMBEDDED__||linkState;
+    const s=linkState||window.__EMBEDDED__;
     if(s.clientMode)document.body.classList.add("client-mode");
     if(s.finalized)document.body.classList.add("finalized");
     apply(s);
